@@ -67,7 +67,8 @@ int main(int argc , char *argv[])
         }
          
         //Receive a reply from the server
-        if( recv(sock , file_content , 2000 , 0) < 0)
+		int read_size;
+        if(  ( read_size = recv(sock , file_content , 2000 , 0) ) < 0)
         {
             puts("recv failed");
             break;

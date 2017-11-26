@@ -20,6 +20,37 @@
 const char* error_message_read_name = "Could not read file name";
 const char* error_message_open_file = "Could not open the file";
 const char* error_message_read_file = "Could not read the file";
+const char* user_name_question = "Please enter username :";
+const char* password_question = " Please enter password :";
+
+/**
+
+returns 0 if successful 
+return -1 if it is not successful
+
+*/
+int getCredentials( int socket ){
+
+	char username[20];
+	char password[10];
+
+	send( socket, user_name_question, strlen( user_name_question ), 0 );
+
+	int read_bytes = read( socket, username, strlen( username ) );
+
+	username[read_bytes-1] = '\0';
+
+	send( socket, password_question, strlen( password_question ), 0 );
+
+	read_bytes = read( socket, password, strlen( password ) );
+
+	password[read_bytes-1] = '\0';
+
+
+	printf("Username is %s and password is %s \n", username, password );
+
+	
+}
 
 void* workerThread( void* arg ){
 
@@ -27,13 +58,22 @@ void* workerThread( void* arg ){
 	int client_socket = *( int* )arg;
 	char filename[FILENAME_SIZE];
 	char file[300];
+	char user_name[20];
+	char password[10];
+
+	int login_result = getCredentials( client_socket );
 
 	while( 1 ){
-   		 int result = read(client_socket , filename ,FILENAME_SIZE );
+
+		 printf("Waiting to read data ...\n");
+
+
+
+  		 int result = read(client_socket , filename ,FILENAME_SIZE );
 
 		if( result == 0 || result == -1 ){
 
-			printf("-------------------Closing connection---------------------\n");
+			printf("-------------------Closing connection---------------------Result is %d\n", result);
 			close( client_socket );
 			pthread_exit( 0 ); 
 		}
