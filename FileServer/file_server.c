@@ -46,10 +46,8 @@ int getCredentials( int socket ){
 
 	password[read_bytes-1] = '\0';
 
-
 	printf("Username is %s and password is %s \n", username, password );
 
-	
 }
 
 void* workerThread( void* arg ){
@@ -158,7 +156,8 @@ int main(int argc , char *argv[])
     //Accept and incoming connection
     puts("Waiting for incoming connections...");
     c = sizeof(struct sockaddr_in);
-     
+ 
+	while( 1 ){    
     //accept connection from an incoming client
     client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);
 
@@ -167,7 +166,9 @@ int main(int argc , char *argv[])
 	pthread_t id;	
 
 	pthread_create( &id, NULL, workerThread, &client_sock );
-	pthread_join( id, NULL );
+	//pthread_join( id, NULL );
+
+	}
 
     return 0;
 }

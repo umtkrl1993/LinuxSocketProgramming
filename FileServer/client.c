@@ -48,8 +48,27 @@ int main(int argc , char *argv[])
         return 1;
     }
      
-    puts("Connected\n");
-     
+	char username_question[40];
+	char password_question[40];
+	char username[20];
+	char password[20];
+
+	int size = recv( sock, username_question, 40, 0 );
+	username_question[size-1] = '\0';
+
+	printf( "%s ", username_question );
+
+	fgets( username, 20, stdin );
+
+	printf("%s", username);
+
+	size = recv( sock, password_question, 40, 0 );
+
+	password_question[size-1] = '\0';
+
+	fgets( password, 20, stdin ); 
+
+	
     //keep communicating with server
     while(1)
     {
