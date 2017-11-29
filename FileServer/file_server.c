@@ -29,26 +29,6 @@ returns 0 if successful
 return -1 if it is not successful
 
 */
-int getCredentials( int socket ){
-
-	char username[20];
-	char password[10];
-
-	send( socket, user_name_question, strlen( user_name_question ), 0 );
-
-	int read_bytes = read( socket, username, strlen( username ) );
-
-	username[read_bytes-1] = '\0';
-
-	send( socket, password_question, strlen( password_question ), 0 );
-
-	read_bytes = read( socket, password, strlen( password ) );
-
-	password[read_bytes-1] = '\0';
-
-	printf("Username is %s and password is %s \n", username, password );
-
-}
 
 void* workerThread( void* arg ){
 
@@ -56,16 +36,19 @@ void* workerThread( void* arg ){
 	int client_socket = *( int* )arg;
 	char filename[FILENAME_SIZE];
 	char file[300];
-	char user_name[20];
+	char username[20];
 	char password[10];
 
-	int login_result = getCredentials( client_socket );
+	read_bytes = read( client_socket, username, 20 );
+	username[read_bytes-1] = '\0';
+	printf( "Username is %s ---", username );
+	read_bytes = read( client_socket, password, 10 );
+	password[read_bytes-1] = '\0';
+	printf( "Password is %s ---\n", password );
 
 	while( 1 ){
 
 		 printf("Waiting to read data ...\n");
-
-
 
   		 int result = read(client_socket , filename ,FILENAME_SIZE );
 
@@ -92,6 +75,13 @@ void* workerThread( void* arg ){
 
 	
 		int fd = open( filename, O_RDONLY );
+
+		if( fd == -1 ){
+
+			char* errorInfo = strerror( errno );
+			send( client_socket, errorInfo, strlen( errorInfo ), 0 );
+			continue;
+		}
 
 		if( fd == -1 ) {
 			perror( "ERROR: " );

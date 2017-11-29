@@ -7,25 +7,103 @@
 #include <arpa/inet.h> //inet_addr
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdlib.h>
+#include <signal.h>
 
 
-int createAndOpenFile( const char* filename ){
+static int _file_server_socket;
+
+static int _createAndOpenFile( const char* filename ){
 
 	int fd;
-	if( ( fd = open( filename, O_WRONLY | O_CREAT | O_TRUNC ) ) != -1 ){
+	if( ( fd = open( filename, O_WRONLY | O_CREAT | O_TRUNC, 0744 ) ) != -1 ){
 
 			return fd;
 	}
 
 	return -1;
+}
+
+static void _handleAuthentication( int socket ){
+
+	char username[20];
+	char password[10];
+	int error = -1;
+
+
+	while( error == -1 ){
+		printf("Please enter username: " );
+		fgets( username, 20, stdin );
+
+		if( ( error = send( socket, username, strlen( username) , 0 ) ) == -1 ){
+	
+			perror("Please try again error sending username ");
+			continue;
+		}
+
+		printf("Please enter password: " );
+		fgets( password, 10, stdin );
+
+		if( ( error = send( socket, password, strlen( password ), 0 ) ) == -1 ){
+
+			perror("Please enter password again error sending password ");
+			continue;
+		}
+	}
+
+}
+
+static void _startDataFlow( int sock ){
+
+	char filename[50];
+	char filecontent[2000];
+
+    while(1)
+    {
+
+        printf("Enter filename : ");
+        fgets( filename, 50, stdin );
+
+		int fd = _createAndOpenFile( "send_from_server" );
+
+        //Send some data
+        if( send(sock , filename , strlen(filename) , 0) < 0)
+        {
+            puts("Send failed");
+			exit( -1 );
+        }
+         
+        //Receive a reply from the server
+		int read_size;
+        if(  ( read_size = recv(sock , filecontent , 2000 , 0) ) < 0)
+        {
+            puts("recv failed");
+            break;
+        }
+
+		printf( "Received file is %s\n", filecontent );
+		
+		write( fd, filecontent, strlen( filecontent ) );
+
+		close( fd );
+
+    }
 
 }
  
+
+void handleInterruptSignal( int signo ){
+
+	if( signo == SIGINT ){
+		close( _file_server_socket );
+	}
+
+}
+
 int main(int argc , char *argv[])
 {
     int sock;
     struct sockaddr_in server;
-    char file_name[50] , file_content[2000];
 	
 	char new_file[20] = "umit_read.txt";
      
@@ -35,6 +113,9 @@ int main(int argc , char *argv[])
     {
         printf("Could not create socket");
     }
+
+	_file_server_socket = sock;
+
     puts("Socket created");
      
     server.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -48,60 +129,10 @@ int main(int argc , char *argv[])
         return 1;
     }
      
-	char username_question[40];
-	char password_question[40];
-	char username[20];
-	char password[20];
 
-	int size = recv( sock, username_question, 40, 0 );
-	username_question[size-1] = '\0';
-
-	printf( "%s ", username_question );
-
-	fgets( username, 20, stdin );
-
-	printf("%s", username);
-
-	size = recv( sock, password_question, 40, 0 );
-
-	password_question[size-1] = '\0';
-
-	fgets( password, 20, stdin ); 
-
-	
+	_handleAuthentication( sock );
+	_startDataFlow( sock );
     //keep communicating with server
-    while(1)
-    {
-        printf("Enter filename : ");
-        //scanf("%s\n" , message);
-        fgets( file_name, 50, stdin );
-
-		int fd = createAndOpenFile( "send_from_server" );
-		
-        //Send some data
-        if( send(sock , file_name , strlen(file_name) , 0) < 0)
-        {
-            puts("Send failed");
-            return 1;
-        }
-         
-        //Receive a reply from the server
-		int read_size;
-        if(  ( read_size = recv(sock , file_content , 2000 , 0) ) < 0)
-        {
-            puts("recv failed");
-            break;
-        }
-
-		printf( "Received file is %s\n", file_content );
-		
-		
-		write( fd, file_content, strlen( file_content ) );
-
-		close( fd );
-
-         
-    }
      
     close(sock);
     return 0;
