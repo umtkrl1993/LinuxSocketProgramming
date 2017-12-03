@@ -107,8 +107,6 @@ void* workerThread( void* arg ){
 	pthread_exit( ( void*) 0 );
 
 }
-
-
 int main(int argc , char *argv[])
 {
     int socket_desc , client_sock , c , read_size;
