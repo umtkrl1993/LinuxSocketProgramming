@@ -11,6 +11,7 @@
 #include<pthread.h>
 #include<fcntl.h>
 #include<errno.h>
+#include"socket.h"
 
 
 #define FILENAME_SIZE 50
@@ -92,7 +93,7 @@ void* workerThread( void* arg ){
 		int bytes;
 		if( ( bytes = read( fd, file, 300 ) ) != -1 ) {
 
-			file[bytes-1] = '\0';
+			file[bytes] = '\0';
 			send( client_socket, file, strlen( file ), 0 );		
 		}
 
@@ -109,37 +110,19 @@ void* workerThread( void* arg ){
 }
 int main(int argc , char *argv[])
 {
-    int socket_desc , client_sock , c , read_size;
+    int  client_sock , c , read_size;
+	socket_desc server_socket;
     struct sockaddr_in server , client;
     char* client_message = (char*)malloc( sizeof(char)*2000);
 
     memset( client_message, 0, 2000 );
      
-    //Create socket
-    socket_desc = socket(AF_INET , SOCK_STREAM , 0);
-    if (socket_desc == -1)
-    {
-        printf("Could not create socket");
-    }
-    puts("Socket created");
-     
-    //Prepare the sockaddr_in structure
-    server.sin_family = AF_INET;
-    server.sin_addr.s_addr = INADDR_ANY;
-    server.sin_port = htons( 8888 );
-     
-    //Bind
-    if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
-    {
-        //print the error message
-        perror("bind failed. Error");
-        return 1;
-    }
+	server_socket = openTCPSocket( 8888 );	
 
     puts("bind done");
      
     //Listen
-    listen(socket_desc , 3);
+    listen(server_socket , 3);
      
     //Accept and incoming connection
     puts("Waiting for incoming connections...");
@@ -147,7 +130,7 @@ int main(int argc , char *argv[])
  
 	while( 1 ){    
     //accept connection from an incoming client
-    client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);
+    client_sock = accept( server_socket, (struct sockaddr *)&client, (socklen_t*)&c);
 
 	puts("Connection accepted");
 

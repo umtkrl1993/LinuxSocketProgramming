@@ -16,7 +16,7 @@ static int _file_server_socket;
 static int _createAndOpenFile( const char* filename ){
 
 	int fd;
-	if( ( fd = open( filename, O_WRONLY | O_CREAT | O_TRUNC, 0744 ) ) != -1 ){
+	if( ( fd = open( filename, O_WRONLY | O_CREAT | O_TRUNC, 0644 ) ) != -1 ){
 
 			return fd;
 	}
@@ -80,6 +80,8 @@ static void _startDataFlow( int sock ){
             puts("recv failed");
             break;
         }
+
+		filecontent[read_size] = '\0';
 
 		printf( "Received file is %s\n", filecontent );
 		
