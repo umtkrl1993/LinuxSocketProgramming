@@ -33,7 +33,13 @@ def startDBServer():
 		data = conn.recv( 1024 )
 		username, password = parseData( data )
 		is_correct = mysql_handler.mysql_connector.checkCredentials( username, password )
-		if is_correct == True:
+		if is_correct == 0:
+			conn.send("Correct")
+
+		elif is_correct == 1:
+			conn.send("Incorrect")
+	
+		elif is_correct == 2:
 
 
 

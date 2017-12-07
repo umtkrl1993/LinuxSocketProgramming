@@ -17,14 +17,45 @@ class mysql_connector:
 
 	@staticmethod
 	def connect():
-		_db_connection = MySQLdb.connect( HOST, USER, PASSWD, DBNAME )
-		_cur = _db_connection.cursor()
+		mysql_connector._db_connection = MySQLdb.connect( HOST, USER, PASSWD, DBNAME )
+		mysql_connector._cur = mysql_connector._db_connection.cursor()
 
 	@staticmethod
 	def checkCredentials( username, password ):
-		if _db_connection is None:
+		if mysql_connector._db_connection is None:
 			raise DBConnectionException("Can not connect to Database")
+	
+		sql = "Select Password from Users where Username='%s'" % username
+		print "executes sql query is %s" % sql
 
-		
-		
-		
+		try:
+			mysql_connector._cur.execute( sql )	
+			result = mysql_connector._cur.fetchall()
+
+			if not result:
+				return " ";
+			passwd = " "
+			for row in result:
+				passwd = row[0]
+
+			if passwd == password:
+				return 0
+			else:
+				return 1
+		except Exception as ex:
+			print "Exception while executing the query" + str(ex)
+			return 2
+			
+
+
+def main():
+
+	mysql_connector.connect()
+
+	passwd = mysql_connector.checkCredentials( "umit", "comodo" )
+
+	print "password is %s" % passwd
+
+
+if __name__ == "__main__":
+	main()
