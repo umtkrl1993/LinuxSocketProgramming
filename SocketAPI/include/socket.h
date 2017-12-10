@@ -2,12 +2,13 @@
 #ifndef _SOCKET_H
 #define _SOCKET_H
 
-
 typedef int socket_desc;
 
-socket_desc openTCPSocket( int port_number );
+socket_desc openTCPSocket();
 
-static int _bind( socket_desc socket, int port_number );
+int connectToServer( socket_desc socket_descriptor, const char* server_address, int port_number );
+
+int bindSocket( socket_desc socket, int port_number );
 
 
 #endif
