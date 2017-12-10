@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <signal.h>
+#include "socket.h"
 
 
 static int _file_server_socket;
@@ -24,6 +25,8 @@ static int _createAndOpenFile( const char* filename ){
 	return -1;
 }
 
+
+//gets username and password from command line
 static void _handleAuthentication( int socket ){
 
 	char username[20];
@@ -102,36 +105,41 @@ void handleInterruptSignal( int signo ){
 
 }
 
+/*
+static void _connectToRemoteServer( const char* args[] ){
+
+
+}
+*/
+
+
+//arg[1] is host ip
+//arg[2] is port number
 int main(int argc , char *argv[])
 {
-    int sock;
+
+	socket_desc sock;
     struct sockaddr_in server;
 	
 	char new_file[20] = "umit_read.txt";
      
     //Create socket
-    sock = socket(AF_INET , SOCK_STREAM , 0);
+	sock = openTCPSocketForClient();
+	
     if (sock == -1)
     {
         printf("Could not create socket");
+		exit(1);
     }
+
+	if( connectToServer( sock, argv[1], argv[2] ) == -1 )
+	{
+		
+		printf("Could not connect to remote server");
+		exit(1);
+	}
 
 	_file_server_socket = sock;
-
-    puts("Socket created");
-     
-    server.sin_addr.s_addr = inet_addr("127.0.0.1");
-    server.sin_family = AF_INET;
-    server.sin_port = htons( 8888 );
- 
-    //Connect to remote server
-    if (connect(sock , (struct sockaddr *)&server , sizeof(server)) < 0)
-    {
-        perror("connect failed. Error");
-        return 1;
-    }
-     
-
 	_handleAuthentication( sock );
 	_startDataFlow( sock );
     //keep communicating with server

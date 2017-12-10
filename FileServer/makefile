@@ -6,3 +6,6 @@ SRC=file_server.c
 
 Server: file_server.c
 	$(CC) $(SRC) $(INCLUDE) $(LIB) $(LIBNAME) -o server
+
+Client: client.c
+	$(CC) client.c $(INCLUDE) $(LIB) $(LIBNAME) -o client
