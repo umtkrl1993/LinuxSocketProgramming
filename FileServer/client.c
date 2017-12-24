@@ -118,21 +118,38 @@ static void _connectToRemoteServer( const char* args[] ){
 int main(int argc , char *argv[])
 {
 
+
+	if( argc != 3 ){
+
+		printf("You have to provide host address and port number !!!");
+		exit( 0 );
+	}
+
+	int port = atoi( argv[2] );
+
+	if( port == 0 ){
+
+		printf("No valid port number");
+		exit( 0 );
+	}
+
 	socket_desc sock;
     struct sockaddr_in server;
 	
 	char new_file[20] = "umit_read.txt";
      
     //Create socket
-	sock = openTCPSocketForClient();
 	
+	sock = openTCPSocket();
     if (sock == -1)
     {
         printf("Could not create socket");
 		exit(1);
     }
 
-	if( connectToServer( sock, argv[1], argv[2] ) == -1 )
+	int return_val = connectToServer( sock, &server, argv[1], port );
+
+	if( return_val != 0 )
 	{
 		
 		printf("Could not connect to remote server");

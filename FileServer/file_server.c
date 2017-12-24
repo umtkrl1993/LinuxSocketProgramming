@@ -32,8 +32,9 @@ static int _handleAuthentication( const char* username, const char* password ){
 	char string_to_be_send[51];
 	char response_from_dbserver[30];
 	int return_value = 0;
+	struct sockaddr_in db_server;
 	socket_desc database_socket = openTCPSocket();
-	connectToServer( database_socket, DATABASE_HOST, DATABASE_PORT );
+	connectToServer( database_socket, &db_server, DATABASE_HOST, DATABASE_PORT );
 	int ret = snprintf( string_to_be_send, sizeof( string_to_be_send ), "%s%c%s", username, ' ', password );
 	string_to_be_send[ret] = '\0';
 
@@ -156,7 +157,7 @@ int main(int argc , char *argv[])
      
 	server_socket = openTCPSocket();	
 	
-	bindSocket( server_socket, 8888 );
+	bindSocket( server_socket, &server, 1100 );
 
     puts("bind done");
      
