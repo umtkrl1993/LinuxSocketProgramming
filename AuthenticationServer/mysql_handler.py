@@ -1,14 +1,18 @@
 #!/usr/bin/python
 
 import MySQLdb
+import threading
+
 HOST = "localhost"
 USER = "fileServerAdmin"
 PASSWD = "fileServer"
 DBNAME = "fileServer"
 
+db_mutex = threading.Lock()
+
 class DBConnectionException(Exception):
 	def __init__( self, message ):
-		super( DBConnectionException, self ).__init__( message )
+		Exception.__init__( self, message )
 
 class mysql_connector:
 
@@ -17,34 +21,44 @@ class mysql_connector:
 
 	@staticmethod
 	def connect():
-		mysql_connector._db_connection = MySQLdb.connect( HOST, USER, PASSWD, DBNAME )
-		mysql_connector._cur = mysql_connector._db_connection.cursor()
+		if mysql_connector._db_connection is None:
+			mysql_connector._db_connection = MySQLdb.connect( HOST, USER, PASSWD, DBNAME )
+			mysql_connector._cur = mysql_connector._db_connection.cursor()
 
 	@staticmethod
 	def checkCredentials( username, password ):
 		if mysql_connector._db_connection is None:
 			raise DBConnectionException("Can not connect to Database")
 	
+		global db_mutex
+		db_mutex.acquire()
+		current_threadID = threading.current_thread()
+		print "Thread %s got the lock" %str( current_threadID )
 		sql = "Select Password from Users where Username='%s'" % username
 		print "executes sql query is %s" % sql
 
 		try:
 			mysql_connector._cur.execute( sql )	
 			result = mysql_connector._cur.fetchall()
-
+			return_value = " ";
 			if not result:
-				return " ";
-			passwd = " "
-			for row in result:
-				passwd = row[0]
+				db_mutex.release()
+				return " "
+
+			passwd = result[0][0]
 
 			if passwd == password:
-				return 0
+				return_value = 0
 			else:
-				return 1
+				return_value = 1
 		except Exception as ex:
 			print "Exception while executing the query" + str(ex)
-			return 2
+			return_value = 3
+
+		
+		print "Thread %s is releasing the lock" %str( current_threadID )
+		db_mutex.release()
+		return return_value
 			
 
 
