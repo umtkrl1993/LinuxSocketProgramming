@@ -65,7 +65,7 @@ static void _startDataFlow( int sock ){
     {
 
         printf("Enter filename : ");
-        fgets( filename, 50, stdin );
+        fgets( filename, 100, stdin );
 
 		int fd = _createAndOpenFile( "send_from_server" );
 

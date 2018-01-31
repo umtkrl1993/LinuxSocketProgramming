@@ -8,23 +8,12 @@
 #include <arpa/inet.h> //inet_addr
 #include <unistd.h>    //write
 #include <stdlib.h>
-#include<pthread.h>
-#include<fcntl.h>
-#include<errno.h>
-#include"socket.h"
-
-
-#define FILENAME_SIZE 50
-#define BUFFER_SIZE 2000
-#define DATABASE_PORT 1194
-#define DATABASE_HOST "127.0.0.1"
-
-const char* error_message_read_name = "Could not read file name";
-const char* error_message_open_file = "Could not open the file";
-const char* error_message_read_file = "Could not read the file";
-const char* user_name_question = "Please enter username :";
-const char* password_question = " Please enter password :";
-
+#include <pthread.h>
+#include <fcntl.h>
+#include <errno.h>
+#include "socket.h"
+#include <signal.h>
+#include "defs.h"
 
 
 static int _handleAuthentication( const char* username, const char* password ){
@@ -33,6 +22,7 @@ static int _handleAuthentication( const char* username, const char* password ){
 	char response_from_dbserver[30];
 	int return_value = 0;
 	struct sockaddr_in db_server;
+
 	socket_desc database_socket = openTCPSocket();
 	connectToServer( database_socket, &db_server, DATABASE_HOST, DATABASE_PORT );
 	int ret = snprintf( string_to_be_send, sizeof( string_to_be_send ), "%s%c%s", username, ' ', password );
@@ -60,6 +50,41 @@ static int _handleAuthentication( const char* username, const char* password ){
 
 }
 
+
+static int _createAndRedirectLogger( const char* filename ){
+
+	if ( ( logger = open( filename, O_RDWR | O_CREAT | O_APPEND, 0644 ) ) == -1 ){
+
+		return -1;
+	}
+
+		
+	if( dup2( logger, 1 ) == -1 ){
+
+		fflush( stdout );
+		close( 1 );
+
+		return -1;
+	}
+
+	return 0;
+
+
+
+
+	//freopen( filename, "a+", stdout );
+
+}
+
+static void _handleInterruptSignal( int signo ){
+
+	if( signo == SIGINT ){
+		printf("Closing files\n");
+		close( logger );
+		exit(0);
+	}
+}
+
 //There is only one chance to authenticate for now
 //In the future three right will be implemented
 void* workerThread( void* arg ){
@@ -67,7 +92,7 @@ void* workerThread( void* arg ){
 	int read_bytes;
 	int client_socket = *( int* )arg;
 	int is_authenticated = 1;
-	char filename[FILENAME_SIZE];
+	char filename[MAX_FILENAME_LENGTH];
 	char file[300];
 	char username[20];
 	char password[10];
@@ -88,7 +113,7 @@ void* workerThread( void* arg ){
 
 		 printf("Waiting to read data ...\n");
 
-  		 int result = read(client_socket , filename ,FILENAME_SIZE );
+  		 int result = read(client_socket , filename ,MAX_FILENAME_LENGTH );
 
 		if( result == 0 || result == -1 ){
 
@@ -153,26 +178,34 @@ int main(int argc , char *argv[])
     struct sockaddr_in server , client;
     char* client_message = (char*)malloc( sizeof(char)*2000);
 
+    signal( SIGINT, _handleInterruptSignal );
     memset( client_message, 0, 2000 );
      
 	server_socket = openTCPSocket();	
 	
 	bindSocket( server_socket, &server, 1100 );
 
-    puts("bind done");
-     
+
+	int ret = _createAndRedirectLogger( "connectionLog.txt" );
+
+	printf( "return value from %d\n\n", ret);
+    printf( "Binding is done \n");
+   
     //Listen
     listen(server_socket , 3);
      
     //Accept and incoming connection
     puts("Waiting for incoming connections...");
+
+    fsync(logger);
+    close(logger);
     c = sizeof(struct sockaddr_in);
  
 	while( 1 ){    
     //accept connection from an incoming client
     client_sock = accept( server_socket, (struct sockaddr *)&client, (socklen_t*)&c);
 
-	puts("Connection accepted");
+	
 
 	pthread_t id;	
 

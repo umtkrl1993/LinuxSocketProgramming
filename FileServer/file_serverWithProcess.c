@@ -8,10 +8,10 @@
 #include <arpa/inet.h> //inet_addr
 #include <unistd.h>    //write
 #include <stdlib.h>
-#include<pthread.h>
-#include<fcntl.h>
-#include<errno.h>
-#include"socket.h"
+#include <pthread.h>
+#include <fcntl.h>
+#include <errno.h>
+#include "socket.h"
 
 
 #define FILENAME_SIZE 50
