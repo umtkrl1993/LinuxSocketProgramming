@@ -5,34 +5,7 @@
 #include <stdlib.h>
 #include "defs.h"
 
-int SocketFactory::getTCPSocket( int domain = AF_INET ) const{
-
-	int sd = socket( domain, SOCK_STREAM, 0 );
-	
-	if( sd == -1 ){
-	
-		return ErrorCodes::SOCKET_OPEN_FAIL;
-	}
-
-	return sd;
-}
-
-int SocketFactory::getRawTCPSocket( int domain = AF_INET ) const{
-
-
-	int sd = socket( domain, SOCK_RAW,IPPROTO_TCP );
-
-	if( sd == -1 ){
-
-		return ErrorCodes::SOCKET_OPEN_FAIL;
-
-	}
-
-	return sd;
-
-}
-
-int SocketFactory::bindSocket( int socket_descriptor, const char* ip_address, int port ) const{
+int SocketHandler::bindSocket( int socket_descriptor, const char* ip_address, int port ) const{
 	struct sockaddr_in server; 
 	
 	server.sin_family = domain;
