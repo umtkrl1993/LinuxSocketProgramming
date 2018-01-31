@@ -25,6 +25,8 @@ const char* error_message_read_file = "Could not read the file";
 const char* user_name_question = "Please enter username :";
 const char* password_question = " Please enter password :";
 
+static const int DEFAULT_SOCK = 1100;
+
 
 
 static int _handleAuthentication( const char* username, const char* password ){
@@ -153,10 +155,9 @@ int main(int argc , char *argv[])
     int  client_sock , c , read_size;
 	socket_desc server_socket;
     struct sockaddr_in server , client;
-    char* client_message = (char*)malloc( sizeof(char)*2000);
 
-    memset( client_message, 0, 2000 );
-     
+    memset( &server, 0, sizeof( struct sockaddr_in ) );
+	memset( &client, 0, sizeof( struct sockaddr_in ) );
 	server_socket = openTCPSocket();	
 	
 	bindSocket( server_socket, &server, 1100 );
@@ -184,13 +185,12 @@ int main(int argc , char *argv[])
 
 	else if( pid == 0 ){
 
+		close( server_socket );
 		workerProcess( client_sock );
+		exit( 0 );
 	}
 
-	else{
-
-
-	}
+		close( client_sock );
 
 	}
 
