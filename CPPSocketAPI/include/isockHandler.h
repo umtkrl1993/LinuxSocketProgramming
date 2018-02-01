@@ -14,7 +14,11 @@ class ISocketHandler : public SocketHandler{
 		~ISocketHandler();
 		int bindSocket() const;
 
-		int startListen() const;
+		int startListen( int backlog ) const;
+
+		const char* getSockIP() const { return mp_ip_address; }
+		int getSockPort() const { return  m_port ; }
+		int getSockDesc() const { return m_socket_descriptor; }
 
 
 	private:

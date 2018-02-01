@@ -1,7 +1,7 @@
 #ifndef _ISOCKFACTORY_H
 #define _ISOCKFACTORY_H
 
-#include "SocketFactory"
+#include "sockFactory.h"
 
 class ISocketFactory : public SocketFactory
 {

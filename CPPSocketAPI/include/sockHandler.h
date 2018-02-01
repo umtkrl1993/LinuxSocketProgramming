@@ -4,7 +4,7 @@
 class SocketHandler{
 
 	virtual int bindSocket() const = 0;
-	virtual int startListen() const = 0;
+	virtual int startListen( int backlog ) const = 0;
 
 };
 
