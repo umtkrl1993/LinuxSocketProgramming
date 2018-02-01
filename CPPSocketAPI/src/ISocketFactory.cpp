@@ -1,4 +1,4 @@
-#include "isockFactory.h"
+#include "ISocketFactory.h"
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
@@ -9,7 +9,8 @@ enum ErrorCodes{
 };
 
 
-int SocketFactory::getTCPSocket() const{
+
+int ISocketFactory::getTCPSocket() const{
 
 	int sd = socket( AF_INET, SOCK_STREAM, 0 );
 	
@@ -21,7 +22,7 @@ int SocketFactory::getTCPSocket() const{
 	return sd;
 }
 
-int SocketFactory::getRawTCPSocket() const{
+int ISocketFactory::getRawTCPSocket() const{
 
 
 	int sd = socket( AF_INET, SOCK_RAW, IPPROTO_TCP );

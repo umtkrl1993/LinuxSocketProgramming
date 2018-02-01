@@ -1,6 +1,6 @@
 #ifndef _ISOCKHANDLER_H
 #define _ISOCKHANDLER_H
-#include "sockHandler.h"
+#include "SocketHandler.h"
 
 
 
@@ -13,8 +13,8 @@ class ISocketHandler : public SocketHandler{
 		ISocketHandler( int socket_desciptor, char* ip, int port );
 		~ISocketHandler();
 		int bindSocket() const;
-
 		int startListen( int backlog ) const;
+		int acceptConnection( struct sockaddr_in& ) const;
 
 		const char* getSockIP() const { return mp_ip_address; }
 		int getSockPort() const { return  m_port ; }
