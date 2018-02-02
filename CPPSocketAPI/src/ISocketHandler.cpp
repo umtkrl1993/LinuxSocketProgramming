@@ -2,7 +2,22 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <unistd.h>
 
+namespace{
+
+
+	bool verifyDescriptor( int desc ){
+
+		int rt = fcntl( desc, F_GETFL );
+		if( rt == -1 )
+			return false;
+
+		return true;
+	}
+
+}
 
 ISocketHandler::ISocketHandler( const ISocketHandler& handler ){
 
@@ -49,6 +64,12 @@ int ISocketHandler::bindSocket() const{
 		return -1;
 	}
 
+	if( verifyDescriptor( m_socket_descriptor) == false ){
+
+		return -1;
+	}
+
+
 	bind_address.sin_family = AF_INET;
 	bind_address.sin_port = htons( m_port );
 
@@ -68,6 +89,11 @@ int ISocketHandler::bindSocket() const{
 
 int ISocketHandler::startListen( int backlog ) const{
 
+	if( verifyDescriptor( m_socket_descriptor) == false ){
+
+		return -1;
+	}
+
 	int return_value = listen( m_socket_descriptor, backlog );
 
 	return return_value;
@@ -75,6 +101,11 @@ int ISocketHandler::startListen( int backlog ) const{
 
 // Need to check if descriptor is valid or not
 int ISocketHandler::acceptConnection( struct sockaddr_in& client ) const{
+
+	if( verifyDescriptor( m_socket_descriptor) == false ){
+
+		return -1;
+	}
 
 	int size = sizeof( struct sockaddr_in );
 
