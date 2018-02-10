@@ -15,6 +15,8 @@
 #include <signal.h>
 #include "defs.h"
 
+static FILE* log_file;
+
 
 static int _handleAuthentication( const char* username, const char* password ){
 
@@ -73,6 +75,13 @@ static int _createAndRedirectLogger( const char* filename ){
 
 
 	//freopen( filename, "a+", stdout );
+
+}
+
+
+static void _createLogger( const char* plog_file ){
+
+	log_file = fopen( plog_file, "a" );
 
 }
 
@@ -171,6 +180,28 @@ void* workerThread( void* arg ){
 
 }
 
+void* loggerThread( void* args ){
+
+	FILE* logger_desc = fdopen( logger, "a" );
+	FILE* thread_logger = fopen( "threadLogger.txt", "w");
+
+	while( 1 ){
+
+		int ret = fflush( logger_desc );
+
+		fprintf( thread_logger, "fflush return value %d\n", ret );
+
+		fsync( logger );
+
+		fflush( thread_logger );
+
+		sleep(4);
+
+
+	}
+
+}
+
 int main(int argc , char *argv[])
 {
     int  client_sock , c , read_size;
@@ -189,7 +220,11 @@ int main(int argc , char *argv[])
 	int ret = _createAndRedirectLogger( "connectionLog.txt" );
 
 	printf( "return value from %d\n\n", ret);
+
     printf( "Binding is done \n");
+
+    fflush(stdout);
+    fsync(1);
    
     //Listen
     listen(server_socket , 3);
@@ -198,12 +233,23 @@ int main(int argc , char *argv[])
     puts("Waiting for incoming connections...");
 
     fsync(logger);
-    close(logger);
+   
     c = sizeof(struct sockaddr_in);
- 
+
+
+ 	pthread_t loggerid;
+
+ 	pthread_create( &loggerid, NULL, loggerThread, NULL );
 	while( 1 ){    
     //accept connection from an incoming client
+
     client_sock = accept( server_socket, (struct sockaddr *)&client, (socklen_t*)&c);
+
+    printf("Connection established \n");
+    FILE* logger_desc = fdopen( logger, "a" );
+    fflush( logger_desc );
+    fsync( logger );
+
 
 	
 
@@ -213,6 +259,8 @@ int main(int argc , char *argv[])
 	//pthread_join( id, NULL );
 
 	}
+
+	 close(logger);
 
     return 0;
 }
