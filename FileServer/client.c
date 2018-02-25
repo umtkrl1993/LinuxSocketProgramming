@@ -38,6 +38,8 @@ static void _handleAuthentication( int socket ){
 		printf("Please enter username: " );
 		fgets( username, 20, stdin );
 
+
+
 		if( ( error = send( socket, username, strlen( username) , 0 ) ) == -1 ){
 	
 			perror("Please try again error sending username ");
@@ -101,6 +103,7 @@ void handleInterruptSignal( int signo ){
 
 	if( signo == SIGINT ){
 		close( _file_server_socket );
+		exit(0);
 	}
 
 }
@@ -135,6 +138,8 @@ int main(int argc , char *argv[])
 
 	socket_desc sock;
     struct sockaddr_in server;
+
+    signal( SIGINT, handleInterruptSignal );
 	
 	char new_file[20] = "umit_read.txt";
      

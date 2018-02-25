@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "socket.h"
+#include <signal.h>
 
 
 #define FILENAME_SIZE 50
@@ -24,6 +25,8 @@ const char* error_message_open_file = "Could not open the file";
 const char* error_message_read_file = "Could not read the file";
 const char* user_name_question = "Please enter username :";
 const char* password_question = " Please enter password :";
+
+FILE* logger = NULL;
 
 static const int DEFAULT_SOCK = 1100;
 
@@ -63,6 +66,35 @@ static int _handleAuthentication( const char* username, const char* password ){
 
 }
 
+
+static int _redirectStdout( const char* filename ){
+
+	int fd = open( filename, O_WRONLY | O_CREAT | O_TRUNC, 0644 );
+
+	if( fd != -1 ){
+
+		if( dup2( fd, 1 ) != -1 ){
+
+			logger = fdopen( fd, "w" );
+			return 0;
+		}
+	}
+
+	return -1;
+
+}
+
+void sig_child( int signo ){
+
+	printf( "client terminated\n" );
+	pid_t pid;
+	int status;
+
+	while( ( pid = waitpid( -1, &status, WNOHANG)) > 0 ){
+		printf( "Fetched a childs exit status with pid %d\n", pid );
+	}
+}
+
 //There is only one chance to authenticate for now
 //In the future three right will be implemented
 void* workerProcess( int sock ){
@@ -79,15 +111,21 @@ void* workerProcess( int sock ){
 	char password[10];
 
 	read_bytes = read( client_socket, username, 20 );
+	if( read_bytes == 0 ){
+		exit(0);
+	}
 	username[read_bytes-1] = '\0';
 	read_bytes = read( client_socket, password, 10 );
+	if( read_bytes == 0 ){
+		exit(0);
+	}
 	password[read_bytes-1] = '\0';
 
 	is_authenticated = _handleAuthentication( username, password );
 
 	if( is_authenticated != 0 ){
 
-		pthread_exit(0);
+		exit(0);
 	}
 
 	while( 1 ){
@@ -100,7 +138,7 @@ void* workerProcess( int sock ){
 
 			printf("-------------------Closing connection---------------------Result is %d\n", result);
 			close( client_socket );
-			pthread_exit( 0 ); 
+			exit( 0 ); 
 		}
 
 	     filename[result-1] = '\0';
@@ -158,22 +196,32 @@ int main(int argc , char *argv[])
 
     memset( &server, 0, sizeof( struct sockaddr_in ) );
 	memset( &client, 0, sizeof( struct sockaddr_in ) );
+
+	signal(SIGCHLD, sig_child);
+
+	_redirectStdout( "connectionLogger.txt" );
+
 	server_socket = openTCPSocket();	
 	
 	bindSocket( server_socket, &server, 1100 );
 
     puts("bind done");
+	fflush( logger );
      
     //Listen
     listen(server_socket , 3);
      
     //Accept and incoming connection
     puts("Waiting for incoming connections...");
+	fflush( logger );
     c = sizeof(struct sockaddr_in);
  
 	while( 1 ){    
     //accept connection from an incoming client
     client_sock = accept( server_socket, (struct sockaddr *)&client, (socklen_t*)&c);
+
+    printf("Connection is established\n");
+	fflush( logger );
 
 	pid_t pid;
 
