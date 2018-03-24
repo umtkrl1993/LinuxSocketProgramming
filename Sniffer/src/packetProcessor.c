@@ -10,8 +10,10 @@
 #include <sys/time.h>
 #include "processorUtilities.h"
 
+#include <time.h>
 
-#define TOTAL_PACKET_LIMIT 4096
+
+#define TOTAL_PACKET_LIMIT 128
 #define PACKET_BATCH_SIZE 32
 #define PACKET_SIZE 65536
 
@@ -81,6 +83,9 @@ int main( int argc, char* argv[] ){
 	As soon as packet buffer is full, packets are sent to processPacketBatch method.
 	*/
 
+	clock_t start, end;
+
+	start = clock();
 	while( total_packet_counter < TOTAL_PACKET_LIMIT ){
 
 		data_size = recvfrom( sniffer_socket ,packet_buffer[packet_index_counter] ,PACKET_SIZE ,0 ,&saddr ,(socklen_t*)&socketaddr_size );
@@ -96,6 +101,10 @@ int main( int argc, char* argv[] ){
 		}
 
 	}
+
+	end = clock();
+
+	printf( " ------------ CPU Execution Time is %f -----------------------\n", ( ( double )( end - start ) )/ CLOCKS_PER_SEC );
 
 }
 
