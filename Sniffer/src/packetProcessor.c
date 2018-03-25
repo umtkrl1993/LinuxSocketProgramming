@@ -106,6 +106,23 @@ int main( int argc, char* argv[] ){
 
 	printf( " ------------ CPU Execution Time is %f -----------------------\n", ( ( double )( end - start ) )/ CLOCKS_PER_SEC );
 
+
+	/**
+		Deallocation is actually redundant here because program is exiting so allocated memories will be released automatically anyway.But it is always good to carry out deallocation.
+
+	*/
+
+	//deallocate memories for packet buffer and processed packets buffer
+	for( int i = 0 ; i < PACKET_BATCH_SIZE; i++ ){
+		free( packet_buffer[i] );
+	}
+
+	free( packet_buffer );
+
+	free( processed_packet );
+
+
+
 }
 
 
