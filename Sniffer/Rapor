@@ -1,0 +1,20 @@
+
+Parallel Code Configuration : 8 Thread
+
+Packet Number: 4096
+Serial Code Execution Time: 0.045712
+ 0.040381
+
+Packet Number: 8192
+Serial Code Execution Time: 0.082229
+Parallel Code Execution Time: 0.075733 
+
+
+Packet Number : 16384
+Serial Code Execution Time: 0.220017/0.206067/0.219399
+Parallel Code Execution Time: 0.215897/0.213734/0.222883
+
+Packet Number : 32768
+Serial Code Execution Time: 0.457269/ 0.443697
+Parallel Code Execution Time: 0.431923 / 0.436406
+
