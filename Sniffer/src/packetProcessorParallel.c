@@ -9,16 +9,32 @@
 
 #include <sys/time.h>
 #include "processorUtilities.h"
-
+#include <pthread.h>
 #include <time.h>
 
+#include "aes256.h"
 
-#define TOTAL_PACKET_LIMIT 32768
-#define PACKET_BATCH_SIZE 32768
+
+#define TOTAL_PACKET_LIMIT 16384
+#define PACKET_BATCH_SIZE 16384
 #define PACKET_SIZE 65536
-
-
+#define THREAD_NUMBER 16
+static struct packet_info* processed_packet;
+static unsigned char** packet_buffer;
+static int thread_index_counter = -1;
 static FILE* log_file;
+
+
+pthread_mutex_t packet_lock;
+
+struct thread_args{
+
+	int thread_index;
+	unsigned char* packet_bufer;
+	struct packet_info* processed_packet;
+};
+
+
 
 
 static int openSnifferSocket(){
@@ -34,13 +50,64 @@ static int openSnifferSocket(){
 	return sniffer_socket;
 }
 
+static void encryptPacket( struct packet_info* processed_packet ){
+
+	uint8_t key[32];
+	for ( int i = 0; i < sizeof(key);i++) key[i] = i;
+
+	aes256_context ctx; 
+
+	aes256_init(&ctx, key);
+
+	aes256_encrypt_ecb( &ctx, ( processed_packet->source_mac ) );
+	aes256_encrypt_ecb( &ctx, ( processed_packet->dst_mac ) );
+
+
+}
+
+void* packetProcessorThread( void* arg ){
+
+	int packet_limit_per_thread = PACKET_BATCH_SIZE / THREAD_NUMBER;
+	int index = 0;
+	for( int i = 0; i < packet_limit_per_thread; i++ ){
+		pthread_mutex_lock( &packet_lock );
+		thread_index_counter++;
+		index = thread_index_counter;
+
+		pthread_mutex_unlock( &packet_lock );
+
+		processEthernetHeader( packet_buffer[index], &processed_packet[index] );
+		processIPHeader( packet_buffer[index], &processed_packet[index] );
+		encryptPacket( &processed_packet[index]);
+
+
+	}
+
+	pthread_exit( 0 );
+
+}
+
+static void startProcessorThreads( unsigned char** packet_buffer, struct packet_info* processed_packet ){
+
+	pthread_t ids[THREAD_NUMBER];
+
+	for( int i = 0; i < THREAD_NUMBER; i++ ){
+		pthread_create( &ids[i], NULL, packetProcessorThread, NULL );
+	}
+
+	for( int i = 0; i < THREAD_NUMBER; i++ ){
+		pthread_join( ids[i], NULL );
+	}
+	
+
+}
+
 
 
 int main( int argc, char* argv[] ){
 
 	struct sockaddr saddr;
-	struct packet_info* processed_packet;
-	unsigned char** packet_buffer;
+
 	int sniffer_socket;
 	int total_packet_counter = 0;
 	int data_size;
@@ -83,9 +150,10 @@ int main( int argc, char* argv[] ){
 	As soon as packet buffer is full, packets are sent to processPacketBatch method.
 	*/
 
+	pthread_mutex_init( &packet_lock, NULL );
 	clock_t start, end;
 
-	start = clock();
+
 	while( total_packet_counter < TOTAL_PACKET_LIMIT ){
 
 		data_size = recvfrom( sniffer_socket ,packet_buffer[packet_index_counter] ,PACKET_SIZE ,0 ,&saddr ,(socklen_t*)&socketaddr_size );
@@ -95,9 +163,12 @@ int main( int argc, char* argv[] ){
 		total_packet_counter++;
 
 		if( packet_index_counter+1 == PACKET_BATCH_SIZE ){
-		 	processPacketBatch( packet_buffer, processed_packet ,PACKET_BATCH_SIZE );
-		 	logProcessedPackets( processed_packet, PACKET_BATCH_SIZE, log_file );
+			start = clock();
+			startProcessorThreads( packet_buffer, processed_packet );
+			logProcessedPackets( processed_packet, PACKET_BATCH_SIZE, log_file );
+			thread_index_counter = -1;
 		 	packet_index_counter = 0;
+
 		}
 
 	}
