@@ -154,9 +154,10 @@ int main( int argc, char* argv[] ){
         	packet_buffer = initial_address;
         	//printHeaderOnCPU( packet_buffer );
              cudaMemcpy( packet_buffer_device, packet_buffer ,THREAD_NUMBER_X * PACKET_SIZE, cudaMemcpyHostToDevice );
-             processPacket<<<grid, block>>>( packet_buffer_device, PACKET_SIZE, info_device, sizeof( struct packet_info ) );
+             processPacket<<<grid, 16>>>( packet_buffer_device, PACKET_SIZE, info_device, sizeof( struct packet_info ) );
 
              CHECK(cudaMemcpy( info , info_device,THREAD_NUMBER_X * sizeof(struct packet_info), cudaMemcpyDeviceToHost ));
+             CHECK(cudaGetLastError());
              cudaFree( info_device );
              cudaFree( packet_buffer_device );
              cudaThreadExit();
