@@ -30,8 +30,8 @@
 
 struct packet_info{
 
-    unsigned char source_mac[ETH_ADDR_LEN];
-    unsigned char dst_mac[ETH_ADDR_LEN];
+    unsigned char source_mac[ETH_ADDR_LEN * THREAD_NUMBER_X];
+    unsigned char dst_mac[ETH_ADDR_LEN * THREAD_NUMBER_X];
     unsigned int source_ip;
     unsigned int dst_ip;
 
@@ -70,44 +70,37 @@ __device__ void resolveEthernetHeader( unsigned char* packet_buffer, struct pack
 __global__ void processPacket( unsigned char* packet_buffer, int size, struct packet_info* info, int size_info ){
 
     unsigned char* tmp_buffer = packet_buffer;
-    struct packet_info* temp = info;
+    int index = threadIdx.x * 6;
 
     tmp_buffer = packet_buffer +  ( threadIdx.x * size );
-    temp = info + ( threadIdx.x * size_info );
 
     struct ethhdr *eth = ( struct ethhdr *)tmp_buffer;
 
-    printf( "Adress of temp %p\n", temp );
 
-    temp->source_ip = threadIdx.x;
-    temp->dst_ip = threadIdx.x + 32;
-
-    temp->dst_mac[0] = eth->h_dest[0];
-    temp->dst_mac[1] = eth->h_dest[1];
-    temp->dst_mac[2] = eth->h_dest[2];
-    temp->dst_mac[3] = eth->h_dest[3];
-    temp->dst_mac[4] = eth->h_dest[4];
-    temp->dst_mac[5] = eth->h_dest[5];
-    printf(" GPU Resolved with thread id %d |-Destination Address : %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", threadIdx.x,temp->dst_mac[0] , temp->dst_mac[1] , temp->dst_mac[2] , temp->dst_mac[3] , temp->dst_mac[4] , temp->dst_mac[5] );
+    info->dst_mac[index + 0] = eth->h_dest[0];
+    info->dst_mac[index + 1] = eth->h_dest[1];
+    info->dst_mac[index + 2] = eth->h_dest[2];
+    info->dst_mac[index + 3] = eth->h_dest[3];
+    info->dst_mac[index + 4] = eth->h_dest[4];
+    info->dst_mac[index + 5] = eth->h_dest[5];
+    printf( "GPU PACKET RESOLVED %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", eth->h_dest[0], eth->h_dest[1], eth->h_dest[2], eth->h_dest[3], eth->h_dest[4], eth->h_dest[5] );
+    printf( "index is %d ======", index );
+    printf(" GPU Resolved with thread id %d |-Destination Address : %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", threadIdx.x,info->dst_mac[index+0] , info->dst_mac[index+1] , info->dst_mac[index+2] , info->dst_mac[index+3] , info->dst_mac[index+4] , info->dst_mac[index+5] );
 
 }
 
 
 static void printHeaderOnCPU( struct packet_info* info ){
 
-	struct packet_info * tmp = info;
+
+	int index = 0;
 	for( int i = 0; i < 32; i++ ){
-		 tmp = info + ( i * sizeof( struct packet_info ));
-		 printf(" CPU Resolved |-Destination Address : %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n",tmp->dst_mac[0] , tmp->dst_mac[1] , tmp->dst_mac[2] , tmp->dst_mac[3] , tmp->dst_mac[4] , tmp->dst_mac[5] );
+		 index =  ( i * 6);
+		 printf("index is %d\n", index);
+		 printf(" CPU Resolved |-Destination Address : %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n",info->dst_mac[index+0] , info->dst_mac[index+1] , info->dst_mac[index+2] , info->dst_mac[index+3] , info->dst_mac[index+4] , info->dst_mac[index+5] );
 
 	}
 
-	tmp = info;
-	for( int i = 0; i < 32; i++ ){
-		tmp = info + ( i * sizeof (struct packet_info ) );
-		printf( "resolved ids is %d and %d \n", tmp->source_ip, tmp->dst_ip );
-
-	}
 }
 
 int main( int argc, char* argv[] ){
@@ -122,10 +115,10 @@ int main( int argc, char* argv[] ){
     struct packet_info* info;
 
     packet_buffer = ( unsigned char* )malloc( sizeof( unsigned char ) * THREAD_NUMBER_X * PACKET_SIZE ) ;
-    info = ( struct packet_info* )malloc( THREAD_NUMBER_X * sizeof( struct packet_info ) );
+    info = ( struct packet_info* )malloc( sizeof( struct packet_info ) );
 
 
-    cudaMalloc( (void**) &info_device, THREAD_NUMBER_X * sizeof( struct packet_info ) );
+    cudaMalloc( (void**) &info_device, sizeof( struct packet_info ) );
     cudaMalloc( (void**) &packet_buffer_device, THREAD_NUMBER_X * PACKET_SIZE * sizeof( unsigned char ) );
 
     cudaMemset( info_device, THREAD_NUMBER_X* sizeof( struct packet_info ), 0 );
@@ -137,7 +130,6 @@ int main( int argc, char* argv[] ){
 
     unsigned char* initial_address = packet_buffer;
 
-    unsigned char* dummy = ( unsigned char* )malloc( sizeof( unsigned char ) * PACKET_SIZE ) ;
 
     int size_info = sizeof( struct packet_info );
 
@@ -154,9 +146,9 @@ int main( int argc, char* argv[] ){
         	packet_buffer = initial_address;
         	//printHeaderOnCPU( packet_buffer );
              cudaMemcpy( packet_buffer_device, packet_buffer ,THREAD_NUMBER_X * PACKET_SIZE, cudaMemcpyHostToDevice );
-             processPacket<<<grid, 16>>>( packet_buffer_device, PACKET_SIZE, info_device, sizeof( struct packet_info ) );
+             processPacket<<<grid, 32>>>( packet_buffer_device, PACKET_SIZE, info_device, sizeof( struct packet_info ) );
 
-             CHECK(cudaMemcpy( info , info_device,THREAD_NUMBER_X * sizeof(struct packet_info), cudaMemcpyDeviceToHost ));
+             CHECK(cudaMemcpy( info , info_device, sizeof(struct packet_info), cudaMemcpyDeviceToHost ));
              CHECK(cudaGetLastError());
              cudaFree( info_device );
              cudaFree( packet_buffer_device );
