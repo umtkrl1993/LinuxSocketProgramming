@@ -52,29 +52,17 @@ static int openSnifferSocket(){
 }
 
 
-__device__ void resolveEthernetHeader( unsigned char* packet_buffer, struct packet_info* info )
+__device__ void resolveEthernetHeader( unsigned char* packet_buffer, struct packet_info* info , int index )
 {
    
     struct ethhdr *eth = ( struct ethhdr *)packet_buffer;
 
-    info->dst_mac[0] = eth->h_dest[0];
-    info->dst_mac[1] = eth->h_dest[1];
-    info->dst_mac[2] = eth->h_dest[2];
-    info->dst_mac[3] = eth->h_dest[3];
-    info->dst_mac[4] = eth->h_dest[4];
-    info->dst_mac[5] = eth->h_dest[5];
-
-    printf(" GPU Resolved  |-Destination Address : %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", info->dst_mac[0] , info->dst_mac[1] , info->dst_mac[2] , info->dst_mac[3] , info->dst_mac[4] , info->dst_mac[5] );
-}
-
-__global__ void processPacket( unsigned char* packet_buffer, int size, struct packet_info* info, int size_info ){
-
-    unsigned char* tmp_buffer = packet_buffer;
-    int index = threadIdx.x * 6;
-
-    tmp_buffer = packet_buffer +  ( threadIdx.x * size );
-
-    struct ethhdr *eth = ( struct ethhdr *)tmp_buffer;
+    info->source_mac[index + 0] = eth->h_source[0];
+    info->source_mac[index + 1] = eth->h_source[1];
+    info->source_mac[index + 2] = eth->h_source[2];
+    info->source_mac[index + 3] = eth->h_source[3];
+    info->source_mac[index + 4] = eth->h_source[4];
+    info->source_mac[index + 5] = eth->h_source[5];
 
 
     info->dst_mac[index + 0] = eth->h_dest[0];
@@ -83,9 +71,18 @@ __global__ void processPacket( unsigned char* packet_buffer, int size, struct pa
     info->dst_mac[index + 3] = eth->h_dest[3];
     info->dst_mac[index + 4] = eth->h_dest[4];
     info->dst_mac[index + 5] = eth->h_dest[5];
-    printf( "GPU PACKET RESOLVED %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", eth->h_dest[0], eth->h_dest[1], eth->h_dest[2], eth->h_dest[3], eth->h_dest[4], eth->h_dest[5] );
-    printf( "index is %d ======", index );
-    printf(" GPU Resolved with thread id %d |-Destination Address : %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", threadIdx.x,info->dst_mac[index+0] , info->dst_mac[index+1] , info->dst_mac[index+2] , info->dst_mac[index+3] , info->dst_mac[index+4] , info->dst_mac[index+5] );
+
+    printf(" GPU Resolved  |-Destination Address : %.2X-%.2X-%.2X-%.2X-%.2X-%.2X \n", info->dst_mac[index + 0] , info->dst_mac[index + 1] , info->dst_mac[index+2] , info->dst_mac[index+3] , info->dst_mac[index+4] , info->dst_mac[index+5] );
+}
+
+__global__ void processPacket( unsigned char* packet_buffer, int size, struct packet_info* info, int size_info ){
+
+    unsigned char* tmp_buffer = packet_buffer;
+    int index = threadIdx.x * ETH_ADDR_LEN;
+
+    tmp_buffer = packet_buffer +  ( threadIdx.x * size );
+
+    resolveEthernetHeader( tmp_buffer, info, index );
 
 }
 
