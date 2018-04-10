@@ -14,8 +14,8 @@
 #include "aes256.h"
 
 
-#define TOTAL_PACKET_LIMIT 16384
-#define PACKET_BATCH_SIZE 16384
+#define TOTAL_PACKET_LIMIT 2048
+#define PACKET_BATCH_SIZE 2048
 #define PACKET_SIZE 65536
 
 
@@ -96,14 +96,14 @@ int main( int argc, char* argv[] ){
 
 
 	socketaddr_size = sizeof( struct sockaddr );
+	long mtime, seconds, useconds;
 
 	/**
 	Start to capture network packets. Captured packets are not processed immediately since packets are buffered until they reach the predefined size limit.
 	As soon as packet buffer is full, packets are sent to processPacketBatch method.
 	*/
 
-	clock_t start, end;
-
+	struct timeval start,end;
 	
 	while( total_packet_counter < TOTAL_PACKET_LIMIT ){
 
@@ -113,19 +113,22 @@ int main( int argc, char* argv[] ){
 		packet_index_counter++;
 		total_packet_counter++;
 
+
 		if( packet_index_counter+1 == PACKET_BATCH_SIZE ){
-			start = clock();
+			gettimeofday( &start, NULL );
 		 	processPacketBatch( packet_buffer, processed_packet ,PACKET_BATCH_SIZE );
 		 	encryptPackets( processed_packet );
+		 	gettimeofday( &end, NULL );
+		 	seconds  = end.tv_sec  - start.tv_sec;
+ 			useconds = end.tv_usec - start.tv_usec;
+ 			mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+		 	printf("\n CPU : %ld ms",mtime);
+
 		 	logProcessedPackets( processed_packet, PACKET_BATCH_SIZE, log_file );
 		 	packet_index_counter = 0;
 		}
 
 	}
-
-	end = clock();
-
-	printf( " ------------ CPU Execution Time is %f -----------------------\n", ( ( double )( end - start ) )/ CLOCKS_PER_SEC );
 
 
 	/**
